@@ -11,3 +11,7 @@
 *.lai
 *.la
 *.a
+
+# ndk-build garbage
+src/mfdisk/obj
+src/mfdisk/libs
