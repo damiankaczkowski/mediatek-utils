@@ -1,0 +1,36 @@
+* BOOT[0,1]
+
+Начиная с августа 2011 г. ядра при загрузке стали находить несуществующие партиции /dev/mmcblk0boot0 и /dev/mmcblk0boot1.
+Выглядело все это как бага. Но затем в недрах lkml бфл найден интересный документик:
+https://lkml.org/lkml/2011/5/25/513
+Highlights are:
+Core:
+ * eMMC 4.4 "boot partition" support.  This exposes an eMMC device's
+   boot partitions, which are accessed separately from the other
+   partitions as (e.g.) /dev/mmcblk0boot0.  There's a strong potential
+   for bricking the device you're running on by writing to these (they
+   are usually used by the bootloader), so we disable write access by
+   default.  To write to them, first perform:
+     # echo 0 > /sys/block/mmcblkXbootY/force_ro
+Так что это "это не бага, это фича". Служебные загрузчики для emmc. Как выяснилось, пользователи банально оккупированных девайсов уже научились их модифицировать, чтобы сбрасывать счетчик записей во флеш и убирать треугольник при загрузке в устройствах от самсунга.
+
+* DUMCHAR
+
+[Dumchar_probe]*******************Introduction******************
+[Dumchar_probe]There are 3 address in eMMC Project: Linear Address, Logical Address, Physical Address
+[Dumchar_probe]Linear Address: Used in scatter file, uboot, preloader,flash tool etc. 
+[Dumchar_probe]Linear Address: MBR linear address is fixed in eMMCComo.mk, that is same for all chips in the project 
+[Dumchar_probe]Logical Address: Used in /proc/dumchar_info, mmcblk0 etc. MBR logical address is 0
+[Dumchar_probe]Physical Address: Used in eMMC driver, MBR Physical Address = MBR Linear Address - (BOOT1 size + BOOT2 Size + RPMB Size)
+[Dumchar_probe]define  User_Region_Header (BOOT1 size + BOOT2 Size + RPMB Size)
+
+* Disassemble BOOT/RECOVERY
+
+To get just the image search for the GZ signature - 1f 8b 08 00.
+
+od -A d -t x1 vmlinuz | grep '1f 8b 08 00'
+0024576 24 26 27 00 ae 21 16 00 1f 8b 08 00 7f 2f 6b 45
+
+so the image begins at 24576+8 => 24584. Then just copy the image from the point and decompress it -
+
+dd if=vmlinuz bs=1 skip=24584 | zcat > vmlinux

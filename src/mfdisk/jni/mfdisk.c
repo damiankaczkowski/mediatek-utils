@@ -52,7 +52,23 @@ int bootrecord_print(struct bootrecord *b) {
     struct partition *p = b->partitions;
 
     for (int i = 0; i < 4; i++) {
-        printf("%02x %08x %08x\n", p->sys_ind, read4_little_endian(p->start4) + b->offset, read4_little_endian(p->size4));
+
+        if (!p->sys_ind) break;
+
+        unsigned int start = read4_little_endian(p->start4) + b->offset;
+        unsigned int size = read4_little_endian(p->size4);
+
+/*
+        char s_size[200];
+        if ((start + size) == 0xFFFFFFFF) {
+            strcpy(s_size, "       EOF");
+        } else if (size == 0xFFFFFFFF) {
+            sprintf(s_size, "%08x", 2); // extended partition
+        } else {
+            sprintf(s_size, "%08x", size);
+        }
+*/
+        printf("%02x %08x %08x [%08x:%08x] (%d)\n", p->sys_ind, start, size,  start * SECTOR_SIZE, (start + size) * SECTOR_SIZE, size * SECTOR_SIZE);
         p++;
     }
 
@@ -76,6 +92,9 @@ int bootrecord_read(struct bootrecord *b, const char *filename, int offset, int 
 struct pmt_entry {
     char name[0x10];
     char data[15*4];
+// ? f ? LinearStart1 0 LinearStart2 0 LinearEnd1 0 0 0 LinearEnd2 ByteSize LinearStart3 0
+//                                     DSB_BL: Y        0          FAT: 0
+//                                     __XXXX: 0        0
 } PACKED;
 
 struct pmt_table {
