@@ -7,12 +7,17 @@
 # A0:       ffff88011ce4fd80 2390471685 S Bo:1:026:1 -115 1 = a0
 
 import re
+import sys
 
 template = re.compile(r'(?P<URBTAG>\w+) (?P<TIMESTAMP>\w+) (?P<ETYPE>[CS]) (?P<URBTYPEDIR>[BCIZ][io]):\d+:\d+:\d+ (?P<STATUS>[\d-]+) (?P<DATALEN>\d+)( = (?P<DATA>[\w ]+))?$').match
 
 if __name__ == '__main__':
 
-    fd = open('dumps/6577-readback-0-400.log')
+    if len(sys.argv) < 2:
+        print 'usbdump <raw-data-file>'
+        sys.exit(1)
+
+    fd = open(str(sys.argv[1]))
 
     data_dir = None
 
